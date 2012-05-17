@@ -3,9 +3,112 @@ function Mesh() {
 }
 
 Mesh.prototype.getVertices = function() {
-	
+	var vertices = new Array();
+	for (var i = 0; i < this.faces.length; i++){
+		var start = this.faces[i].getHalfEdge();
+		var temp = start;
+		do {
+			var coord = temp.getVertex().getCoord();
+			vertices[vertices.length] = coord[0];
+			vertices[vertices.length] = coord[1];
+			vertices[vertices.length] = coord[2];
+			vertices[vertices.length] = 1.0;
+
+			temp = temp.getNext();
+		}
+		while(temp != start);
+	}
+	return vertices;
 }
 
+Mesh.prototype.getColors = function() {
+	var colors = new Array();
+	for (var i = 0; i < this.faces.length; i++){
+		var color = this.faces[i].getColor();
+		var start = this.faces[i].getHalfEdge();
+		var temp = start;
+		do {
+			colors[colors.length] = color[0];
+			colors[colors.length] = color[1];
+			colors[colors.length] = color[2];
+			colors[colors.length] = color[3];
+
+			temp = temp.getNext();
+		}
+		while(temp != start);
+	}
+	return colors;
+}
+
+Mesh.prototype.getIndices = function() {
+	var indices = new Array();
+	var startInd = 0;
+	for (var i = 0; i < this.faces.length; i++){
+		var start = this.faces[i].getHalfEdge();
+		var temp = start;
+		var numEdge = 0;
+
+		// count how many edges are on this face
+		do {
+			numEdge++;
+			temp = temp.getNext();
+		} while (temp != start);
+			
+		// create indices based on the number of edges
+		var numTriangle = numEdge - 2;
+		var lastVert = 1;
+		for (var j = 0; j < numTriangle; j++)
+		{
+			indices[indices.length] = startInd;
+			indices[indices.length] = startInd + lastVert;
+			indices[indices.length] = startInd + lastVert + 1;
+			lastVert++;
+		}
+		startInd += numTriangle + 2;
+	}
+	return indices;
+}
+
+Mesh.prototype.getNormals = function() {
+	var normals = new Array();
+	for (var i = 0; i < this.faces.length; i++){
+		var start = this.faces[i].getHalfEdge();
+		var norm = calcNormal(start);
+		var temp = start;
+		do {
+			normals[normals.length] = norm[0];
+			normals[normals.length] = norm[1];
+			normals[normals.length] = norm[2];
+			normals[normals.length] = 0.0;
+
+			temp = temp.getNext();
+		}
+		while(temp != start);
+	}
+	return normals;
+}
+
+
+function calcNormal(start){
+	// calculate computed unit length normal at centroid
+	var a = 0.0;
+	var b = 0.0;
+	var c = 0.0;
+
+	var temp = start;
+	do {
+		var p1 = temp.getVertex().getCoord();
+		var p2 = temp.getNext().getVertex().getCoord();
+
+		a += (p1[1] - p2[1]) * (p1[2] + p2[2]);
+		b += (p1[2] - p2[2]) * (p1[0] + p2[0]);
+		c += (p1[0] - p2[0]) * (p1[1] + p2[1]);
+
+		temp = temp.getNext();
+	} while (temp != start);
+
+	return vec3.create([a,b,c]);
+}
 
 function unitCube() {
 
@@ -213,6 +316,7 @@ function unitCube() {
 }
 
 
+
 // Testing
 
 /*
@@ -228,5 +332,10 @@ alert(vec3.str(he1.getVertex().getCoord()));
 */
 
 var cube = unitCube();
-//alert("test");
-alert(cube.faces[0].getId());
+//var he = cube.faces[0].getHalfEdge();
+//alert(cube.faces[0].getHalfEdge() == he.getNext().getNext().getNext().getNext());
+
+alert(cube.getIndices());
+
+
+//var vector = vec3.create([1, 2, 3]);
