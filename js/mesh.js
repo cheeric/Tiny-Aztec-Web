@@ -317,25 +317,39 @@ function unitCube() {
 
 
 
-// Testing
-
-/*
-var v1 = new Vertex(12, 2, 3);
-
-var vector = vec3.create();
-vec3.set([1,1,1], vector);
-//alert(vec3.str(vector));
-
-var he1 = new HalfEdge(0);
-he1.setVertex(v1);
-alert(vec3.str(he1.getVertex().getCoord()));
-*/
-
-var cube = unitCube();
-//var he = cube.faces[0].getHalfEdge();
-//alert(cube.faces[0].getHalfEdge() == he.getNext().getNext().getNext().getNext());
-
-alert(cube.getIndices());
 
 
+var canvas, context;
 //var vector = vec3.create([1, 2, 3]);
+function init() {
+	canvas = document.getElementById('main_canvas');
+	context = canvas.getContext('2d');
+	canvas.addEventListener('mousemove', ev_mousemove, false);
+	//alert(canvas.width);
+}
+
+// The mousemove event handler.
+var started = false;
+function ev_mousemove (ev) {
+	var x, y;
+
+	// Get the mouse position relative to the canvas element.
+	if (ev.layerX || ev.layerX == 0) { // Firefox
+		x = ev.layerX;
+		y = ev.layerY;
+	} else if (ev.offsetX || ev.offsetX == 0) { // Opera
+		x = ev.offsetX;
+		y = ev.offsetY;
+	}
+
+	// The event handler works like a drawing pencil which tracks the mouse 
+	// movements. We start drawing a path made up of lines.
+	if (!started) {
+		context.beginPath();
+		context.moveTo(x, y);
+		started = true;
+	} else {
+		context.lineTo(x, y);
+		context.stroke();
+	}
+}
