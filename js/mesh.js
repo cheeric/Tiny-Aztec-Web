@@ -342,6 +342,8 @@ function ev_mousemove (ev) {
 		y = ev.offsetY;
 	}
 
+	document.getElementById("coord").innerHTML = 'X: ' + x + '    Y: ' + y;
+
 	// The event handler works like a drawing pencil which tracks the mouse 
 	// movements. We start drawing a path made up of lines.
 	if (!started) {
@@ -353,3 +355,5 @@ function ev_mousemove (ev) {
 		context.stroke();
 	}
 }
+
+init();
