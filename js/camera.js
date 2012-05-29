@@ -63,6 +63,14 @@ Camera.prototype.getUpVec = function() {
 
 
 
+Camera.prototype.rotUp = function(angle) {
+	this.camYAngle += angle;
+}
+
+Camera.prototype.rotDown = function(angle) {
+	this.camYAngle -= angle;
+}
+
 Camera.prototype.rotRight = function(angle) {
 	this.camXAngle += angle;
 }
@@ -71,13 +79,6 @@ Camera.prototype.rotLeft = function(angle) {
 	this.camXAngle -= angle;
 }
 
-Camera.prototype.rotUp = function(angle) {
-	this.camYAngle += angle;
-}
-
-Camera.prototype.rotDown = function(angle) {
-	this.camYAngle -= angle;
-}
 
 Camera.prototype.zoomIn = function() {
 	this.PR[2] *= 9.0/10.0;
@@ -89,7 +90,29 @@ Camera.prototype.zoomOut = function() {
 	this.view = this.calcView(vec3.add(this.PR, this.REF));
 }
 
-var cam = new Camera(0, 0, 8, 0, 0, 0);
+
+Camera.prototype.moveUp = function(dist) {
+	this.PR[1] += dist/110;
+	this.view = this.calcView(vec3.add(this.PR, this.REF));
+}
+
+Camera.prototype.moveDown = function(dist) {
+	this.PR[1] -= dist/110;
+	this.view = this.calcView(vec3.add(this.PR, this.REF));
+}
+
+Camera.prototype.moveRight = function(dist) {
+	this.PR[0] += dist/110;
+	this.view = this.calcView(vec3.add(this.PR, this.REF));
+}
+
+Camera.prototype.moveLeft = function(dist) {
+	this.PR[0] -= dist/110;
+	this.view = this.calcView(vec3.add(this.PR, this.REF));
+}
+
+
+var cam = new Camera(0, 0, 10, 0, 0, 0);
 var model = mat4.create();
 mat4.identity(model);
 //var mvMAT = mat4.add(model, cam.getVMatrix());

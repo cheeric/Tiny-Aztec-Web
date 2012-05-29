@@ -316,7 +316,7 @@ function unitCube() {
 }
 
 
-
+var cube = unitCube();
 
 /*
 var canvas, context;
