@@ -318,7 +318,7 @@ function unitCube() {
 
 
 
-
+/*
 var canvas, context;
 //var vector = vec3.create([1, 2, 3]);
 function init() {
@@ -343,17 +343,7 @@ function ev_mousemove (ev) {
 	}
 
 	document.getElementById("coord").innerHTML = 'X: ' + x + '    Y: ' + y;
-
-	// The event handler works like a drawing pencil which tracks the mouse 
-	// movements. We start drawing a path made up of lines.
-	if (!started) {
-		context.beginPath();
-		context.moveTo(x, y);
-		started = true;
-	} else {
-		context.lineTo(x, y);
-		context.stroke();
-	}
 }
 
 init();
+*/

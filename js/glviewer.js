@@ -1,38 +1,3 @@
-<!DOCTYPE HTML>
-<html>
-<head>
-	<script src = "js/glMatrix-0.9.5.min.js"></script>
-	<script src = "js/modernizr-2.5.3.js"></script>
-	<script type="text/javascript" src="webgl-utils.js"></script>
-
-<script id="shader-fs" type="x-shader/x-fragment">
-    precision mediump float;
-
-    varying vec4 vColor;
-
-    void main(void) {
-        gl_FragColor = vColor;
-    }
-</script>
-
-<script id="shader-vs" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-    attribute vec4 aVertexColor;
-
-    uniform mat4 uMVMatrix;
-    uniform mat4 uPMatrix;
-
-    varying vec4 vColor;
-
-    void main(void) {
-        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-        vColor = aVertexColor;
-    }
-</script>
-
-
-<script type="text/javascript">
-
     var gl;
 
     function initGL(canvas) {
@@ -292,9 +257,29 @@
 
         mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
-        mat4.set(cam.getVMatrix(), mvMatrix);
+        mat4.identity(mvMatrix);
+
+        mat4.translate(mvMatrix, [-1.5, 0.0, -8.0]);
+
         mvPushMatrix();
-        //mat4.rotate(mvMatrix, degToRad(rCube), [1, 1, 1]);
+        mat4.rotate(mvMatrix, degToRad(rPyramid), [0, 1, 0]);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexPositionBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, pyramidVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexColorBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, pyramidVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        setMatrixUniforms();
+        gl.drawArrays(gl.TRIANGLES, 0, pyramidVertexPositionBuffer.numItems);
+
+        mvPopMatrix();
+
+
+        mat4.translate(mvMatrix, [3.0, 0.0, 0.0]);
+
+        mvPushMatrix();
+        mat4.rotate(mvMatrix, degToRad(rCube), [1, 1, 1]);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -333,7 +318,7 @@
 
 
     function webGLStart() {
-        var canvas = document.getElementById("main_canvas");
+        var canvas = document.getElementById("lesson04-canvas");
         initGL(canvas);
         initShaders()
         initBuffers();
@@ -341,77 +326,5 @@
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.enable(gl.DEPTH_TEST);
 
-        //tick();
-        //mvMatrix = cam.getVMatrix();
-        drawScene();
-
-        canvas.addEventListener('mousedown', ev_canvas, false);
-        canvas.addEventListener('mousemove', ev_canvas, false);
-        canvas.addEventListener('mouseup',   ev_canvas, false);
-        canvas.addEventListener('mousewheel',   ev_canvas, false);
+        tick();
     }
-
-    var x, y;
-    var pressed = false;
-
-    function ev_canvas (ev) {
-        // Get the mouse position relative to the canvas element.
-        if (ev.type == "mousedown"){
-            if (ev.button == 0)
-                pressed = true;
-        }
-        if (ev.type == "mouseup"){
-            pressed = false;
-            x = undefined;
-            y = undefined;
-        }
-        if (ev.type == "mousemove"){
-            if (pressed){
-                if (ev.layerX || ev.layerX == 0) { // Firefox
-                    ev._x = ev.layerX;
-                    ev._y = ev.layerY;
-                    if (x){
-                        if (ev._x > x)
-                            cam.rotRight(degToRad((ev._x-x)/2));
-                        if (ev._x < x)
-                            cam.rotLeft(degToRad((x-ev._x)/2));
-                    }
-                    if (y){
-                        if (ev._y > y)
-                            cam.rotUp(degToRad((ev._y-y)/2));
-                        if (ev._y < y)
-                            cam.rotDown(degToRad((y-ev._y)/2));
-                    }
-                    x = ev._x;
-                    y = ev._y;
-                } else if (ev.offsetX || ev.offsetX == 0) { // Opera
-                    x = ev.offsetX;
-                    y = ev.offsetY;
-                }
-
-                //document.getElementById("coord").innerHTML = 'X: ' + x + '    Y: ' + y;
-                drawScene();
-            }
-        }
-        if (ev.type == "mousewheel"){
-                if (ev.wheelDelta > 0)
-                    cam.zoomIn();
-                if (ev.wheelDelta < 0)
-                    cam.zoomOut();
-                drawScene();
-        }
-    }
-
-	</script>
-</head>
-<body onload="webGLStart();">
-	<!-- <p id="coord">X Y</p> -->
-	<canvas id = "main_canvas" width = "1500" height = "900" style="position:absolute"/>
-
-	<script src = "js/vertex.js"></script>
-	<script src = "js/face.js"></script>
-	<script src = "js/halfedge.js"></script>
-	<script src = "js/mesh.js"></script>
-	<script src = "js/camera.js"></script>
-</body>
-</html>
