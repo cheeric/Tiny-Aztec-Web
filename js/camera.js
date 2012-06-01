@@ -55,10 +55,25 @@ Camera.prototype.getVMatrix = function() {
 }
 
 Camera.prototype.getEyeVec = function() {
-
+	var model = mat4.create();
+	mat4.identity(model);
+	mat4.rotate(model, -this.camXAngle, [0, 1, 0]);
+	mat4.rotate(model, -this.camYAngle, [1, 0, 0]);
+	var temp = mat4.multiplyVec4(model, [this.REF[0]+this.PR[0], this.REF[1]+this.PR[1], this.REF[2]+this.PR[2], 1.0]);
+	return [temp[0], temp[1], temp[2]];
 }
 
 Camera.prototype.getUpVec = function() {
+	var model = mat4.create();
+	mat4.identity(model);
+	mat4.rotate(model, -this.camXAngle, [0, 1, 0]);
+	mat4.rotate(model, -this.camYAngle, [1, 0, 0]);
+	var temp = mat4.multiplyVec4(model, [this.upVec[0], this.upVec[1], this.upVec[2], 1.0]);
+	return [temp[0], temp[1], temp[2]];
+}
+
+Camera.prototype.getRef = function() {
+	return [this.REF[0], this.REF[1], this.REF[2]];
 }
 
 

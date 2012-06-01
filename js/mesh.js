@@ -72,8 +72,7 @@ Mesh.prototype.getIndices = function() {
 Mesh.prototype.getNormals = function() {
 	var normals = new Array();
 	for (var i = 0; i < this.faces.length; i++){
-		var start = this.faces[i].getHalfEdge();
-		var norm = calcNormal(start);
+		var norm = calcNormal(this.faces[i]);
 		var temp = start;
 		do {
 			normals[normals.length] = norm[0];
@@ -89,13 +88,13 @@ Mesh.prototype.getNormals = function() {
 }
 
 
-function calcNormal(start){
+function calcNormal(face){
 	// calculate computed unit length normal at centroid
 	var a = 0.0;
 	var b = 0.0;
 	var c = 0.0;
 
-	var temp = start;
+	var temp = face.getHalfEdge();
 	do {
 		var p1 = temp.getVertex().getCoord();
 		var p2 = temp.getNext().getVertex().getCoord();
@@ -105,9 +104,85 @@ function calcNormal(start){
 		c += (p1[0] - p2[0]) * (p1[1] + p2[1]);
 
 		temp = temp.getNext();
-	} while (temp != start);
+	} while (temp != face.getHalfEdge());
 
 	return vec3.create([a,b,c]);
+}
+
+
+function rayPlaneInter(p1, p2, f){
+	var t;
+	var norm = calcNormal(f);
+	var S = f.getHalfEdge().getVertex().getCoord();
+	var trash = vec3.create();
+
+	// make sure the ray is not parallel or on the plane
+	if (vec3.dot(norm, vec3.subtract(p2,p1, trash)) != 0)
+		t = vec3.dot(norm, vec3.subtract(S, p1, trash)) / vec3.dot(norm, vec3.subtract(p2, p1, trash));
+
+	return t;
+}
+
+function pointInPoly(p, f){
+	// find the largest normal component in the face
+	var norm = calcNormal(f);
+	var x = Math.abs(norm[0]);
+	var y = Math.abs(norm[1]);
+	var z = Math.abs(norm[2]);
+
+	var ind1;
+	var ind2;
+
+	// depending on the largest normal component, project the face
+	// onto that plane
+	if (x >= y && x >= z)
+	{
+		ind1 = 1;
+		ind2 = 2;
+	}
+	else if (y >= x && y >= z)
+	{
+		ind1 = 0;
+		ind2 = 2;
+	}
+	else if (z >= x && z >= y)
+	{
+		ind1 = 0;
+		ind2 = 1;
+	}
+
+
+	var start = f.getHalfEdge();
+	var temp = start;
+	var inside = false;
+
+	do {
+		// iterate through each edge
+		var p1 = temp.getVertex().getCoord();
+		var p2 = temp.getNext().getVertex().getCoord();
+
+		// swap p1 and p2
+		if (p1[ind2] > p2[ind2]) 
+		{
+			var swap = p2;
+			p2 = p1;
+			p1 = swap;
+		}
+
+		if (p[ind2] > p1[ind2])	{
+			if (p[ind2] <= p2[ind2]) {
+				if (p1[ind2] != p2[ind2]) {
+					if (((p[ind1] - p1[ind1]) * (p2[ind2] - p1[ind2])) -
+						((p2[ind1] - p1[ind1]) * (p[ind2] - p1[ind2])) > 0)	{
+						inside = !inside;
+					}
+				}
+			}
+		}
+
+		temp = temp.getNext();
+	} while (temp != start);
+	return inside;
 }
 
 function unitCube() {
@@ -315,8 +390,6 @@ function unitCube() {
 	return cubeMesh;
 }
 
-
-var cube = unitCube();
 
 /*
 var canvas, context;

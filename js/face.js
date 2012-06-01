@@ -1,6 +1,7 @@
 function Face(a) {
 	if (a!=undefined)
 		this.id = a;
+	this.selected = false;
 }
 
 
@@ -15,7 +16,16 @@ Face.prototype.getHalfEdge = function() {
 };
 
 Face.prototype.getColor = function() {
-	return this.color;
+	var c = new Array(4);
+	if (this.selected) {
+		c[0] = this.color[0]/3;
+		c[1] = this.color[1]/3;
+		c[2] = this.color[2]/3;
+		c[3] = 1;
+		return c;
+	}
+	else
+		return this.color;
 };
 
 
