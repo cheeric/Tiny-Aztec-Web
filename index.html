@@ -1,6 +1,9 @@
-<!DOCTYPE HTML>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
+    <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="js/jquery-ui-1.8.20.custom.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="js/jquery-ui-1.8.20.custom.css"/>
 	<script src = "js/glMatrix-0.9.5.min.js"></script>
 	<script src = "js/modernizr-2.5.3.js"></script>
 	<script type="text/javascript" src="webgl-utils.js"></script>
@@ -43,8 +46,8 @@
 
     function initGL() {
         try {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = $('#resizeDiv').width();
+            canvas.height = $('#resizeDiv').height();
             gl = canvas.getContext("experimental-webgl");
             gl.viewportWidth = canvas.width;
             gl.viewportHeight = canvas.height;
@@ -200,10 +203,9 @@
 
         fov = 60.0;
         mat4.perspective(fov, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
-
         mat4.set(cam.getVMatrix(), mvMatrix);
+
         mvPushMatrix();
-        //mat4.rotate(mvMatrix, degToRad(rCube), [1, 1, 1]);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -274,23 +276,9 @@
             x = undefined;
             y = undefined;
             if (ev.button == 2){
-                // change to normalized device coordinates
-                n_x = ev.layerX / canvas.width;
-                n_y = 1 - (ev.layerY / canvas.height);
-
-                var A = vec3.create(), B = vec3.create(), C = vec3.create(), M = vec3.create(), V = vec3.create(), H = vec3.create(), P = vec3.create();
-
                 var E = cam.getEyeVec();
-                var U = cam.getUpVec();
-                var center = cam.REF;
-                vec3.subtract(center, E, C);
-                vec3.cross(C, U, A);
-                vec3.cross(A, C, B);
-                vec3.add(E,C,M);
-                var phi = degToRad(fov/2);
-                vec3.scale(B, (1.0/(vec3.length(B)) * (vec3.length(C)*Math.tan(phi))), V);
-                vec3.scale(A, (1.0/(vec3.length(A)) * (vec3.length(C)*Math.tan(phi)*(canvas.width/canvas.height))), H);
-                vec3.add(vec3.add(M, vec3.scale(H, (2*n_x-1))), vec3.scale(V, (2*n_y-1)), P);
+                //alert(vec3.str(E));
+                var P = cam.getP(ev.layerX, ev.layerY);
                 //alert(vec3.str(P));
 
                 var first = true;
@@ -337,18 +325,27 @@
                     if (ev.layerX || ev.layerX == 0) { // Firefox
                         ev._x = ev.layerX;
                         ev._y = ev.layerY;
-                        if (x){
+                        /*if (x){
                             if (ev._x > x)
-                                cam.moveLeft(ev._x-x);
+                                cam.moveRight(ev._x-x);
                             if (ev._x < x)
-                                cam.moveRight(x-ev._x);
+                                cam.moveLeft(x-ev._x);
                         }
                         if (y){
                             if (ev._y > y)
-                                cam.moveUp(ev._y-y);
+                                cam.moveDown(ev._y-y);
                             if (ev._y < y)
-                                cam.moveDown(y-ev._y);
+                                cam.moveUp(y-ev._y);
+                        }*/
+
+                        if (x || y){
+                            var oldP = cam.getP(x, y);
+                            var newP = cam.getP(ev._x, ev._y);
+                            var T = vec3.create();
+                            vec3.subtract(newP, oldP, T);
+                            cam.move(T);
                         }
+
                         x = ev._x;
                         y = ev._y;
                     } else if (ev.offsetX || ev.offsetX == 0) { // Opera
@@ -362,15 +359,15 @@
                         ev._y = ev.layerY;
                         if (x){
                             if (ev._x > x)
-                                cam.rotRight(degToRad((ev._x-x)/2));
+                                cam.rotRight((ev._x-x)/2);
                             if (ev._x < x)
-                                cam.rotLeft(degToRad((x-ev._x)/2));
+                                cam.rotLeft((x-ev._x)/2);
                         }
                         if (y){
                             if (ev._y > y)
-                                cam.rotUp(degToRad((ev._y-y)/2));
+                                cam.rotDown((ev._y-y)/2);
                             if (ev._y < y)
-                                cam.rotDown(degToRad((y-ev._y)/2));
+                                cam.rotUp((y-ev._y)/2);
                         }
                         x = ev._x;
                         y = ev._y;
@@ -393,15 +390,228 @@
         }
     }
 
-    window.onresize = function(event) {
+    $(window).resize(function() {
+        var oldWinWidth = $('#container').width();
+        var oldWinHeight = $('#container').height();
+
+        var oldDivWidth = $('#resizeDiv').width();
+        var oldDivHeight = $('#resizeDiv').height();
+
+        var oldRightWidth = $('#test').width();
+        var oldRightHeight = $('#test').height();
+
+        $('#container').width(window.innerWidth).height(window.innerHeight);
+        $('#resizeDiv').width(window.innerWidth*(oldDivWidth/oldWinWidth)).height(window.innerHeight*(oldDivHeight/oldWinHeight));
+        $('#test').width(window.innerWidth - $('#resizeDiv').width());
+
         drawScene();
-    }
+    });
+
+
+
+
+    $.ui.plugin.add("resizable", "alsoResizeReverseWidth", {
+
+        start: function(event, ui) {
+
+            var self = $(this).data("resizable"), o = self.options;
+
+            var _store = function(exp) {
+                $(exp).each(function() {
+                    $(this).data("resizable-alsoresize-reverse", {
+                        width: parseInt($(this).width(), 10),
+                        left: parseInt($(this).css('left'), 10)
+                    });
+                });
+            };
+
+            if (typeof(o.alsoResizeReverseWidth) == 'object' && !o.alsoResizeReverseWidth.parentNode) {
+                if (o.alsoResizeReverseWidth.length) { o.alsoResize = o.alsoResizeReverseWidth[0];    _store(o.alsoResizeReverseWidth); }
+                else { $.each(o.alsoResizeReverseWidth, function(exp, c) { _store(exp); }); }
+            }else{
+                _store(o.alsoResizeReverseWidth);
+            }
+        },
+
+        resize: function(event, ui){
+            var self = $(this).data("resizable"), o = self.options, os = self.originalSize, op = self.originalPosition;
+
+            var delta = {
+                width: (self.size.width - os.width) || 0,
+                left: (self.position.left - op.left) || 0
+            },
+
+            _alsoResizeReverseWidth = function(exp, c) {
+                $(exp).each(function() {
+                    var el = $(this), start = $(this).data("resizable-alsoresize-reverse"), style = {}, css = c && c.length ? c : ['width', 'left'];
+
+                    $.each(css || ['width', 'left'], function(i, prop) {
+                        var sum = (start[prop]||0) - (delta[prop]||0); // subtracting instead of adding
+                        if (sum && sum >= 0)
+                            style[prop] = sum || null;
+                    });
+
+                    //Opera fixing relative position
+                    if (/relative/.test(el.css('position')) && $.browser.opera) {
+                        self._revertToRelativePosition = true;
+                        el.css({ position: 'absolute', top: 'auto', left: 'auto' });
+                    }
+
+                    el.css(style);
+                });
+            };
+
+            if (typeof(o.alsoResizeReverseWidth) == 'object' && !o.alsoResizeReverseWidth.nodeType) {
+                $.each(o.alsoResizeReverseWidth, function(exp, c) { _alsoResizeReverseWidth(exp, c); });
+            }else{
+                _alsoResizeReverseWidth(o.alsoResizeReverseWidth);
+            }
+        },
+
+        stop: function(event, ui){
+            var self = $(this).data("resizable");
+
+            //Opera fixing relative position
+            if (self._revertToRelativePosition && $.browser.opera) {
+                self._revertToRelativePosition = false;
+                el.css({ position: 'relative' });
+            }
+
+            $(this).removeData("resizable-alsoresize-reverse");
+        }
+    });
+
+    
+    $.ui.plugin.add("resizable", "alsoResizeReverseHeight", {
+
+        start: function(event, ui) {
+
+            var self = $(this).data("resizable"), o = self.options;
+
+            var _store = function(exp) {
+                $(exp).each(function() {
+                    $(this).data("resizable-alsoresize-reverse", {
+                        height: parseInt($(this).height(), 10),
+                        top: parseInt($(this).css('top'), 10)
+                    });
+                });
+            };
+
+            if (typeof(o.alsoResizeReverseHeight) == 'object' && !o.alsoResizeReverseHeight.parentNode) {
+                if (o.alsoResizeReverseHeight.length) { o.alsoResize = o.alsoResizeReverseHeight[0];    _store(o.alsoResizeReverseHeight); }
+                else { $.each(o.alsoResizeReverseHeight, function(exp, c) { _store(exp); }); }
+            }else{
+                _store(o.alsoResizeReverseHeight);
+            }
+        },
+
+        resize: function(event, ui){
+            var self = $(this).data("resizable"), o = self.options, os = self.originalSize, op = self.originalPosition;
+
+            var delta = {
+                height: (self.size.height - os.height) || 0,
+                top: (self.position.top - op.top) || 0
+            },
+
+            _alsoResizeReverseHeight = function(exp, c) {
+                $(exp).each(function() {
+                    var el = $(this), start = $(this).data("resizable-alsoresize-reverse"), style = {}, css = c && c.length ? c : ['height', 'top'];
+
+                    $.each(css || ['height', 'top'], function(i, prop) {
+                        var sum = (start[prop]||0) - (delta[prop]||0); // subtracting instead of adding
+                        if (sum && sum >= 0)
+                            style[prop] = sum || null;
+                    });
+
+                    //Opera fixing relative position
+                    if (/relative/.test(el.css('position')) && $.browser.opera) {
+                        self._revertToRelativePosition = true;
+                        el.css({ position: 'absolute', top: 'auto', left: 'auto' });
+                    }
+
+                    el.css(style);
+                });
+            };
+
+            if (typeof(o.alsoResizeReverseHeight) == 'object' && !o.alsoResizeReverseHeight.nodeType) {
+                $.each(o.alsoResizeReverseHeight, function(exp, c) { _alsoResizeReverseHeight(exp, c); });
+            }else{
+                _alsoResizeReverseHeight(o.alsoResizeReverseHeight);
+            }
+        },
+
+        stop: function(event, ui){
+            var self = $(this).data("resizable");
+
+            //Opera fixing relative position
+            if (self._revertToRelativePosition && $.browser.opera) {
+                self._revertToRelativePosition = false;
+                el.css({ position: 'relative' });
+            }
+
+            $(this).removeData("resizable-alsoresize-reverse");
+        }
+    });
+
 
 	</script>
 </head>
 <body id="body" onload="webGLStart();" style="margin:0px">
-	<!-- <p id="coord">X Y</p> -->
-	<canvas id = "main_canvas" oncontextmenu="return false;" style="position:absolute; width:100%; height:100%"/>
+    <div id="container">
+        <div id="resizeDiv" style="float:left; width:80%; height:100%">
+            <canvas id = "main_canvas" oncontextmenu="return false;"/>
+        </div>
+        <div id="test" style="float:left; overflow:hidden; height:100%; background:gray">
+            Stuff
+        </div>
+    </div>
+    
+    <script>
+        $('#container').width(window.innerWidth).height(window.innerHeight);
+        $('#resizeDiv').resizable({containment:"parent",
+                                    resize: function(event, ui) {drawScene();},
+                                    alsoResizeReverseWidth: "#test",
+                                    handles: "e"});
+        $('#test').resizable({containment:"parent",
+                                handles: "none"}).width(window.innerWidth-$('#resizeDiv').width());
+    </script>
+    
+    <style type="text/css">
+        .ui-resizable-n
+        {
+            height: 2px;
+            top: 0px;
+            z-index: 1000;
+        }
+
+        .ui-resizable-e
+        {
+            width: 4px;
+            right: -2px;
+            z-index: 1000;
+        }
+
+        .ui-resizable-s
+        {
+            height: 2px;
+            bottom: 0px;
+            z-index: 1000;
+        }
+
+        .ui-resizable-w
+        {
+            width: 2px;
+            left: 0px;
+            z-index: 1000;
+        }
+
+        .ui-resizable-se
+        {
+            right: 0px;
+            bottom: 0px;
+            cursor: crosshair;
+        }
+    </style>
 
 </body>
 </html>
